@@ -1,54 +1,72 @@
-![nuxt-shadcn-dashboard-social-card](https://nuxt-shadcn-dashboard.vercel.app/social-card.png)
+# Alpha Portal Admin
 
-# Nuxt Shadcn Vue TailwindCSS 4 - Dashboard
+Modern multi-tenant administration portal built with Nuxt 4, Shadcn Vue, TailwindCSS, and Django REST API.
 
-[![built with nuxt][nuxt-src]][nuxt-href]
+## Features
 
-- [Live demo](https://nuxt-shadcn-dashboard.vercel.app)
-- [Component Documentation](https://shadcn-vue.com/docs/introduction)
+- Multi-tenant admin dashboard
+- Authentication & role permissions
+- CMS management
+- News & article management
+- Media library & gallery
+- Project management
+- Document management
+- Responsive modern UI
+- Dark mode support
 
-## Quick Start
+## Tech Stack
 
-```bash [Terminal]
-npx nuxi@latest init -t github:dianprata/nuxt-shadcn-dashboard my-dashboard-app
-cd my-dashboard-app
-pnpm i # If you don't have pnpm installed, run: npm install -g pnpm
+- Nuxt 4
+- Vue 3
+- TailwindCSS 4
+- Shadcn Vue
+- Pinia
+- Django REST API
+
+## Development
+
+Install dependencies:
+
+```bash
+pnpm install
 ```
 
-## App Settings
-You can change the app settings in `app.config.ts` file.
-If you want to change app settings, you have to clear cookie 'app_settings' first.
-```
-export default defineAppConfig({
-  appSettings: {
-    sidebar: {
-      collapsible: 'offcanvas', // 'offcanvas' | 'icon' | 'none'
-      side: 'left', // 'left' | 'right'
-      variant: 'inset', // 'sidebar' | 'floating' | 'inset'
-    },
-    theme: {
-      color: 'default', // 'default' | 'blue' | 'green' | 'orange' | 'purple' | 'red' | 'teal' | 'yellow' | 'rose'
-      type: 'scaled', // 'default' | 'mono' | 'scaled'
-    }
-  },
-})
+Run development server:
+
+```bash
+pnpm dev
 ```
 
-## Contributing
+Build for production:
 
-1. Clone this repository.
-2. Install dependencies `pnpm install`.
-3. Use `pnpm run dev` to start dev server.
+```bash
+pnpm build
+```
 
-## Credits
+## Environment Variables
 
-- [Nuxt.js](https://nuxtjs.org/)
-- [Shadcn Vue](https://shadcn-vue.com/)
-- [TailwindCSS](https://tailwindcss.com/)
+Create `.env` file:
+
+```env
+NUXT_PUBLIC_API_BASE_URL=http://localhost:8000/api
+```
+
+## 👨‍💻 Author
+
+**Meinardus Bria**  
+Mining Software Engineer | Fullstack Developer
+
+- GitHub: https://github.com/21bria
+- LinkedIn: https://linkedin.com/in/bria-seran
+
+### Specialization
+
+- Backend: Django, DRF, PostgreSQL
+- Frontend: Nuxt.js, Vue 3, Tailwind CSS
+- Mining Systems
+- Multi-Tenant SaaS
+- Data Analytics
 
 ## License
 
-MIT
-
-[nuxt-src]: https://img.shields.io/badge/Built%20With%20Nuxt-18181B?logo=nuxt.js
-[nuxt-href]: https://nuxt.com/
+Private Project © Alpha Portal
