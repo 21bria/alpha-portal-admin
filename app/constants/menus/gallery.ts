@@ -10,7 +10,7 @@ export const menusMedia: NavMenu[] = [
       {
         title: 'Gallery',
         icon: 'i-lucide-image-play',
-        link: '/media',
+        link: '/gallery',
         require: {
           any: ["cms.view_media"],
         },

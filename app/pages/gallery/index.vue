@@ -9,7 +9,7 @@ definePageMeta({ requiresSystem: true })
 <script lang="ts">
 export default {
     mounted() {
-        navigateTo("/media/categories")
+        navigateTo("/gallery/categories")
     }
 }
 </script>
