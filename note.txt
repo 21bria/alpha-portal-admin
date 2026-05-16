@@ -1,0 +1,4 @@
+mkdir -p public/tinymce
+cp -R node_modules/tinymce/* public/tinymce/
+
+ls public/tinymce/tinymce.min.js
