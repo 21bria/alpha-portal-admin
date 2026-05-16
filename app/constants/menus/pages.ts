@@ -10,7 +10,7 @@ export const menusPages: NavMenu[] = [
       {
         title: 'Static',
         icon: 'i-lucide-layout-panel-top',
-        link: '/static/page',
+        link: '/content/page',
         require: {
           any: ["cms.view_page"],
         },
@@ -19,7 +19,7 @@ export const menusPages: NavMenu[] = [
       {
         title: 'Sections',
         icon: 'i-lucide-grip-horizontal',
-        link: '/static/sections',
+        link: '/content/sections',
         require: {
           any: ["cms.view_pagesection"],
         },

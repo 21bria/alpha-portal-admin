@@ -2,7 +2,6 @@
 import { ref, computed, watchEffect } from "vue"
 import { useDebounceFn } from "@vueuse/core"
 import { useAsyncData } from "#app"
-import { useRouter } from "vue-router"
 
 import DataTableMaster from "@/components/data-table/DataTableMaster.vue"
 import ConfirmDelete from "@/components/ui/confirm-delete.vue"
@@ -11,15 +10,18 @@ import { useNotify } from "@/composables/useNotify"
 import { useApi } from "@/composables/useApi"
 import { useAuthStore } from "@/stores/auth"
 
+import DialogForm, {
+  type NewsCategoryPayload,
+} from "@/modules/gallery/categories/components/DialogForm.vue"
+
 import {
-  getPageSectionColumns,
-  type PageSectionRow,
-} from "@/modules/static/sections/columns"
+  getNewsCategoryColumns,
+  type NewsCategoryRow,
+} from "@/modules/gallery/categories/columns"
 
-import { sectionsConfig } from "@/modules/static/sections/table"
-import { sectionsFilters } from "@/modules/static/sections/filters"
+import { categoriesConfig } from "@/modules/gallery/categories/table"
+import { categoriesFilters } from "@/modules/gallery/categories/filters"
 
-const router = useRouter()
 const { request } = useApi()
 const notify = useNotify()
 const auth = useAuthStore()
@@ -32,7 +34,7 @@ type ApiList<T> = {
 const role = computed(() => (auth.user?.role ?? "ADMIN_USER") as any)
 const canMutate = computed(() => role.value !== "GLOBAL_VIEWER")
 
-const rows = ref<PageSectionRow[]>([])
+const rows = ref<NewsCategoryRow[]>([])
 const total = ref(0)
 const totalPages = ref(1)
 
@@ -40,8 +42,9 @@ const page = ref(1)
 const pageSize = ref(10)
 const search = ref("")
 const ordering = ref<string | null>(null)
+
 const serverFilters = ref<Record<string, any>>({
-  ...(sectionsConfig.defaultQuery ?? {}),
+  ...(categoriesConfig.defaultQuery ?? {}),
 })
 
 const query = computed(() => ({
@@ -52,13 +55,12 @@ const query = computed(() => ({
   ...serverFilters.value,
 }))
 
-const { data, pending, error, refresh } = await useAsyncData<ApiList<PageSectionRow>>(
-  () => `page-sections:${JSON.stringify(query.value)}`,
-  () =>
-    request(sectionsConfig.endpoint, {
-      method: "GET",
-      query: query.value,
-    }),
+const { data, pending, error, refresh } = await useAsyncData<ApiList<NewsCategoryRow>>(
+  () => `media-categories:${JSON.stringify(query.value)}`,
+  () => request(categoriesConfig.endpoint, {
+    method: "GET",
+    query: query.value, 
+  }),
   { server: false }
 )
 
@@ -76,16 +78,14 @@ const debouncedSearch = useDebounceFn(() => {
   refresh()
 }, 350)
 
-function onApply({ search: s, filters }: any) {
+function onApply({ search: s }: any) {
   search.value = s ?? ""
-  serverFilters.value = { ...(filters ?? {}) }
   page.value = 1
   refresh()
 }
 
 function onReset() {
   search.value = ""
-  serverFilters.value = { ...(sectionsConfig.defaultQuery ?? {}) }
   page.value = 1
   refresh()
 }
@@ -98,21 +98,71 @@ function onSort({ key, dir }: { key: string | null; dir: "asc" | "desc" | null }
   refresh()
 }
 
+// dialog state
+const dialogOpen = ref(false)
+const mode = ref<"create" | "edit">("create")
+const selected = ref<NewsCategoryRow | null>(null)
+const formLoading = ref(false)
+const formErrors = ref<Record<string, any> | null>(null)
+
 function openCreate() {
   if (!canMutate.value) return
-  router.push("/static/post/create")
+
+  formErrors.value = null
+  selected.value = null
+  mode.value = "create"
+  dialogOpen.value = true
 }
 
-function openEdit(row: PageSectionRow) {
+function openEdit(row: NewsCategoryRow) {
   if (!canMutate.value) return
-  router.push(`/static/post/${row.id}/edit`)
+
+  formErrors.value = null
+  selected.value = row
+  mode.value = "edit"
+  dialogOpen.value = true
+}
+
+async function submit(payload: NewsCategoryPayload) {
+  if (!canMutate.value) return
+
+  formLoading.value = true
+  formErrors.value = null
+
+  try {
+    if (mode.value === "create") {
+      await request(categoriesConfig.endpoint, {
+        method: "POST",
+        body: payload,
+      })
+      notify.success(`Category "${payload.name}" created`)
+    } else {
+      await request(
+        `${categoriesConfig.endpoint}${payload.slug || selected.value?.slug}/`,
+        {
+          method: "PATCH",
+          body: payload,
+        }
+      )
+      notify.success(`Category "${payload.name}" updated`)
+    }
+
+    dialogOpen.value = false
+    await refresh()
+  } catch (e: any) {
+    formErrors.value = e?.data ?? {
+      detail: e?.message || "Failed to save",
+    }
+  } finally {
+    formLoading.value = false
+  }
 }
 
 // delete
 const deleteOpen = ref(false)
-const selectedDelete = ref<PageSectionRow | null>(null)
+const selectedDelete = ref<NewsCategoryRow | null>(null)
 
-function remove(row: PageSectionRow) {
+function remove(row: NewsCategoryRow) {
   if (!canMutate.value) return
 
   selectedDelete.value = row
@@ -123,26 +173,28 @@ async function confirmDelete() {
   if (!selectedDelete.value) return
 
   try {
-    await request(`${sectionsConfig.endpoint}${selectedDelete.value.id}/`, {
-      method: "DELETE",
-    })
-
-    notify.success(`Section "${selectedDelete.value.title ?? selectedDelete.value.id}" deleted`)
+    await request(
+      `${categoriesConfig.endpoint}${selectedDelete.value.slug}/`,
+      {
+        method: "DELETE",
+      }
+    )
+    notify.success(`Category "${selectedDelete.value.name}" deleted`)
     deleteOpen.value = false
     selectedDelete.value = null
     await refresh()
   } catch (e: any) {
-    notify.error(e?.data?.detail || e?.message || "Failed to delete section")
+    notify.error(e?.data?.detail || e?.message || "Failed to delete")
   }
 }
 
 // bulk delete
 const bulkDeleteOpen = ref(false)
-const bulkDeleteRows = ref<PageSectionRow[]>([])
+const bulkDeleteRows = ref<NewsCategoryRow[]>([])
 const bulkDeleting = ref(false)
 
 function askBulkDelete(rows: unknown) {
-  const selectedRows = Array.isArray(rows) ? (rows as PageSectionRow[]) : []
+  const selectedRows = Array.isArray(rows) ? rows as NewsCategoryRow[] : []
 
   if (!selectedRows.length) {
     notify.info("No rows selected")
@@ -161,13 +213,16 @@ async function confirmBulkDelete() {
   try {
     await Promise.all(
       bulkDeleteRows.value.map((row) =>
-        request(`${sectionsConfig.endpoint}${row.id}/`, {
-          method: "DELETE",
-        })
+        request(
+          `${categoriesConfig.endpoint}${row.slug}/`,
+          {
+            method: "DELETE",
+          }
+        )
       )
     )
 
-    notify.success(`${bulkDeleteRows.value.length} section row(s) deleted`)
+    notify.success(`${bulkDeleteRows.value.length} category row(s) deleted`)
     bulkDeleteOpen.value = false
     bulkDeleteRows.value = []
     await refresh()
@@ -179,20 +234,15 @@ async function confirmBulkDelete() {
 }
 
 const columns = computed(() =>
-  getPageSectionColumns(
-    {
-      onEdit: openEdit,
-      onDelete: remove,
-    },
-    {
-      role: role.value,
-    }
+  getNewsCategoryColumns(
+    { onEdit: openEdit, onDelete: remove },
+    { role: role.value }
   )
 )
 
 watchEffect(() => {
   if (error.value) {
-    notify.error((error.value as any)?.message || "Failed to load sections")
+    notify.error((error.value as any)?.message || "Failed to load categories")
   }
 })
 </script>
@@ -201,9 +251,9 @@ watchEffect(() => {
   <div class="w-full flex flex-col items-stretch gap-4">
     <div class="flex items-center justify-between">
       <div>
-       <h3 class="text-lg font-semibold">Page Sections</h3>
+        <h3 class="text-lg font-semibold">Media Categories</h3>
         <p class="text-sm text-muted-foreground">
-          Manage dynamic page sections such as hero, content, cards, gallery, CTA, and landing blocks.
+          Manage media categories for company portal news.
         </p>
       </div>
     </div>
@@ -217,7 +267,7 @@ watchEffect(() => {
       :pageSize="pageSize"
       :search="search"
       :loading="pending"
-      :filtersSchema="sectionsFilters"
+      :filtersSchema="categoriesFilters"
       :showImport="false"
       :showExport="false"
       :showDownloadTemplate="false"
@@ -234,23 +284,32 @@ watchEffect(() => {
       @bulk-delete="askBulkDelete"
     />
 
+    <DialogForm
+      v-model:open="dialogOpen"
+      :mode="mode"
+      :role="role"
+      :initial="selected"
+      :loading="formLoading"
+      :errors="formErrors || undefined"
+      @submit="submit"
+    />
+
     <div v-if="error" class="text-sm text-destructive">
       {{ (error as any)?.message || "Failed to load data" }}
     </div>
 
-      <ConfirmDelete
-        v-model:open="deleteOpen"
-        title="Delete Section"
-        :description="`Are you sure you want to delete '${selectedDelete?.title ?? selectedDelete?.id}'? This action cannot be undone.`"
-        @confirm="confirmDelete"
-      />
+    <ConfirmDelete
+      v-model:open="deleteOpen"
+      title="Delete Category"
+      :description="`Are you sure you want to delete '${selectedDelete?.name ?? selectedDelete?.id}'? This action cannot be undone.`"
+      @confirm="confirmDelete"
+    />
 
-      <ConfirmDelete
-        v-model:open="bulkDeleteOpen"
-        title="Bulk Delete Sections"
-        :description="`Are you sure you want to delete ${bulkDeleteRows.length} section row(s)? This action cannot be undone.`"
-        @confirm="confirmBulkDelete"
-      />
-
+    <ConfirmDelete
+      v-model:open="bulkDeleteOpen"
+      title="Bulk Delete Categories"
+      :description="`Are you sure you want to delete ${bulkDeleteRows.length} category row(s)? This action cannot be undone.`"
+      @confirm="confirmBulkDelete"
+    />
   </div>
 </template>

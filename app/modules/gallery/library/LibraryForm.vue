@@ -9,7 +9,7 @@ import { useNotify } from "@/composables/useNotify"
 import { useApi } from "@/composables/useApi"
 import { useAuthStore } from "@/stores/auth"
 
-import MediaLibraryCard from "@/modules/media/library/components/MediaLibraryCard.vue"
+import MediaLibraryCard from "@/modules/gallery/library/components/MediaLibraryCard.vue"
 
 const { request } = useApi()
 const notify = useNotify()

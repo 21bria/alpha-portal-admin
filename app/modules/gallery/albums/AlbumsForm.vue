@@ -9,12 +9,12 @@ import { useNotify } from "@/composables/useNotify"
 import { useApi } from "@/composables/useApi"
 import { useAuthStore } from "@/stores/auth"
 
-import DialogForm from "@/modules/media/albums/components/DialogForm.vue"
-import MediaAlbumCard from "@/modules/media/albums/components/MediaAlbumCard.vue"
+import DialogForm from "@/modules/gallery/albums/components/DialogForm.vue"
+import MediaAlbumCard from "@/modules/gallery/albums/components/MediaAlbumCard.vue"
 
-import type { MediaAlbumRow } from "@/modules/media/albums/columns"
+import type { MediaAlbumRow } from "@/modules/gallery/albums/columns"
 
-import { albumsConfig } from "@/modules/media/albums/table"
+import { albumsConfig } from "@/modules/gallery/albums/table"
 
 const { request } = useApi()
 const notify = useNotify()

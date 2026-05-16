@@ -2,6 +2,7 @@
 import { ref, computed, watchEffect } from "vue"
 import { useDebounceFn } from "@vueuse/core"
 import { useAsyncData } from "#app"
+import { useRouter } from "vue-router"
 
 import DataTableMaster from "@/components/data-table/DataTableMaster.vue"
 import ConfirmDelete from "@/components/ui/confirm-delete.vue"
@@ -10,18 +11,15 @@ import { useNotify } from "@/composables/useNotify"
 import { useApi } from "@/composables/useApi"
 import { useAuthStore } from "@/stores/auth"
 
-import DialogForm, {
-  type PagePayload,
-} from "@/modules/static/page/components/DialogForm.vue"
-
 import {
-  getPageColumns,
-  type PageRow,
-} from "@/modules/static/page/columns"
+  getPageSectionColumns,
+  type PageSectionRow,
+} from "@/modules/content/sections/columns"
 
-import { pageConfig } from "@/modules/static/page/table"
-import { pageFilters } from "@/modules/static/page/filters"
+import { sectionsConfig } from "@/modules/content/sections/table"
+import { sectionsFilters } from "@/modules/content/sections/filters"
 
+const router = useRouter()
 const { request } = useApi()
 const notify = useNotify()
 const auth = useAuthStore()
@@ -34,7 +32,7 @@ type ApiList<T> = {
 const role = computed(() => (auth.user?.role ?? "ADMIN_USER") as any)
 const canMutate = computed(() => role.value !== "GLOBAL_VIEWER")
 
-const rows = ref<PageRow[]>([])
+const rows = ref<PageSectionRow[]>([])
 const total = ref(0)
 const totalPages = ref(1)
 
@@ -42,9 +40,8 @@ const page = ref(1)
 const pageSize = ref(10)
 const search = ref("")
 const ordering = ref<string | null>(null)
-
 const serverFilters = ref<Record<string, any>>({
-  ...(pageConfig.defaultQuery ?? {}),
+  ...(sectionsConfig.defaultQuery ?? {}),
 })
 
 const query = computed(() => ({
@@ -55,10 +52,10 @@ const query = computed(() => ({
   ...serverFilters.value,
 }))
 
-const { data, pending, error, refresh } = await useAsyncData<ApiList<PageRow>>(
-  () => `cms-pages:${JSON.stringify(query.value)}`,
+const { data, pending, error, refresh } = await useAsyncData<ApiList<PageSectionRow>>(
+  () => `page-sections:${JSON.stringify(query.value)}`,
   () =>
-    request(pageConfig.endpoint, {
+    request(sectionsConfig.endpoint, {
       method: "GET",
       query: query.value,
     }),
@@ -79,14 +76,16 @@ const debouncedSearch = useDebounceFn(() => {
   refresh()
 }, 350)
 
-function onApply({ search: s }: any) {
+function onApply({ search: s, filters }: any) {
   search.value = s ?? ""
+  serverFilters.value = { ...(filters ?? {}) }
   page.value = 1
   refresh()
 }
 
 function onReset() {
   search.value = ""
+  serverFilters.value = { ...(sectionsConfig.defaultQuery ?? {}) }
   page.value = 1
   refresh()
 }
@@ -99,74 +98,21 @@ function onSort({ key, dir }: { key: string | null; dir: "asc" | "desc" | null }
   refresh()
 }
 
-// dialog state
-const dialogOpen = ref(false)
-const mode = ref<"create" | "edit">("create")
-const selected = ref<PageRow | null>(null)
-const formLoading = ref(false)
-const formErrors = ref<Record<string, any> | null>(null)
-
 function openCreate() {
   if (!canMutate.value) return
-
-  formErrors.value = null
-  selected.value = null
-  mode.value = "create"
-  dialogOpen.value = true
+  router.push("/static/post/create")
 }
 
-function openEdit(row: PageRow) {
+function openEdit(row: PageSectionRow) {
   if (!canMutate.value) return
-
-  formErrors.value = null
-  selected.value = row
-  mode.value = "edit"
-  dialogOpen.value = true
-}
-
-async function submit(payload: PagePayload) {
-  if (!canMutate.value) return
-
-  formLoading.value = true
-  formErrors.value = null
-
-  try {
-    if (mode.value === "create") {
-      await request(pageConfig.endpoint, {
-        method: "POST",
-        body: payload,
-      })
-
-      notify.success(`Page "${payload.title}" created`)
-    } else {
-      await request(
-        `${pageConfig.endpoint}${payload.slug || selected.value?.slug}/`,
-        {
-          method: "PATCH",
-          body: payload,
-        }
-      )
-
-      notify.success(`Page "${payload.title}" updated`)
-    }
-
-    dialogOpen.value = false
-
-    await refresh()
-  } catch (e: any) {
-    formErrors.value = e?.data ?? {
-      detail: e?.message || "Failed to save page",
-    }
-  } finally {
-    formLoading.value = false
-  }
+  router.push(`/static/post/${row.id}/edit`)
 }
 
 // delete
 const deleteOpen = ref(false)
-const selectedDelete = ref<PageRow | null>(null)
+const selectedDelete = ref<PageSectionRow | null>(null)
 
-function remove(row: PageRow) {
+function remove(row: PageSectionRow) {
   if (!canMutate.value) return
 
   selectedDelete.value = row
@@ -177,28 +123,26 @@ async function confirmDelete() {
   if (!selectedDelete.value) return
 
   try {
-    await request(
-      `${pageConfig.endpoint}${selectedDelete.value.slug}/`,
-      {
-        method: "DELETE",
-      }
-    )
-    notify.success(`Page "${selectedDelete.value.title}" deleted`)
+    await request(`${sectionsConfig.endpoint}${selectedDelete.value.id}/`, {
+      method: "DELETE",
+    })
+
+    notify.success(`Section "${selectedDelete.value.title ?? selectedDelete.value.id}" deleted`)
     deleteOpen.value = false
     selectedDelete.value = null
     await refresh()
   } catch (e: any) {
-    notify.error(e?.data?.detail || e?.message || "Failed to delete")
+    notify.error(e?.data?.detail || e?.message || "Failed to delete section")
   }
 }
 
 // bulk delete
 const bulkDeleteOpen = ref(false)
-const bulkDeleteRows = ref<PageRow[]>([])
+const bulkDeleteRows = ref<PageSectionRow[]>([])
 const bulkDeleting = ref(false)
 
 function askBulkDelete(rows: unknown) {
-  const selectedRows = Array.isArray(rows) ? rows as PageRow[] : []
+  const selectedRows = Array.isArray(rows) ? (rows as PageSectionRow[]) : []
 
   if (!selectedRows.length) {
     notify.info("No rows selected")
@@ -217,16 +161,13 @@ async function confirmBulkDelete() {
   try {
     await Promise.all(
       bulkDeleteRows.value.map((row) =>
-        request(
-          `${pageConfig.endpoint}${row.slug}/`,
-          {
-            method: "DELETE",
-          }
-        )
+        request(`${sectionsConfig.endpoint}${row.id}/`, {
+          method: "DELETE",
+        })
       )
     )
 
-    notify.success(`${bulkDeleteRows.value.length} category row(s) deleted`)
+    notify.success(`${bulkDeleteRows.value.length} section row(s) deleted`)
     bulkDeleteOpen.value = false
     bulkDeleteRows.value = []
     await refresh()
@@ -238,7 +179,7 @@ async function confirmBulkDelete() {
 }
 
 const columns = computed(() =>
-  getPageColumns(
+  getPageSectionColumns(
     {
       onEdit: openEdit,
       onDelete: remove,
@@ -251,7 +192,7 @@ const columns = computed(() =>
 
 watchEffect(() => {
   if (error.value) {
-    notify.error((error.value as any)?.message || "Failed to load categories")
+    notify.error((error.value as any)?.message || "Failed to load sections")
   }
 })
 </script>
@@ -260,13 +201,10 @@ watchEffect(() => {
   <div class="w-full flex flex-col items-stretch gap-4">
     <div class="flex items-center justify-between">
       <div>
-       <h3 class="text-lg font-semibold">
-        Website Pages
-      </h3>
-      <p class="text-sm text-muted-foreground">
-        Manage static pages, landing pages, SEO metadata,
-        and public website content for the company portal.
-      </p>
+       <h3 class="text-lg font-semibold">Page Sections</h3>
+        <p class="text-sm text-muted-foreground">
+          Manage dynamic page sections such as hero, content, cards, gallery, CTA, and landing blocks.
+        </p>
       </div>
     </div>
 
@@ -279,7 +217,7 @@ watchEffect(() => {
       :pageSize="pageSize"
       :search="search"
       :loading="pending"
-      :filtersSchema="pageFilters"
+      :filtersSchema="sectionsFilters"
       :showImport="false"
       :showExport="false"
       :showDownloadTemplate="false"
@@ -296,32 +234,23 @@ watchEffect(() => {
       @bulk-delete="askBulkDelete"
     />
 
-    <DialogForm
-      v-model:open="dialogOpen"
-      :mode="mode"
-      :role="role"
-      :initial="selected"
-      :loading="formLoading"
-      :errors="formErrors || undefined"
-      @submit="submit"
-    />
-
     <div v-if="error" class="text-sm text-destructive">
       {{ (error as any)?.message || "Failed to load data" }}
     </div>
 
-    <ConfirmDelete
-      v-model:open="deleteOpen"
-      title="Delete Page"
-      :description="`Are you sure you want to delete '${selectedDelete?.title ?? selectedDelete?.id}'? This action cannot be undone.`"
-      @confirm="confirmDelete"
-    />
+      <ConfirmDelete
+        v-model:open="deleteOpen"
+        title="Delete Section"
+        :description="`Are you sure you want to delete '${selectedDelete?.title ?? selectedDelete?.id}'? This action cannot be undone.`"
+        @confirm="confirmDelete"
+      />
 
-    <ConfirmDelete
-      v-model:open="bulkDeleteOpen"
-      title="Bulk Delete Pages"
-      :description="`Are you sure you want to delete ${bulkDeleteRows.length} page row(s)? This action cannot be undone.`"
-      @confirm="confirmBulkDelete"
-    />
+      <ConfirmDelete
+        v-model:open="bulkDeleteOpen"
+        title="Bulk Delete Sections"
+        :description="`Are you sure you want to delete ${bulkDeleteRows.length} section row(s)? This action cannot be undone.`"
+        @confirm="confirmBulkDelete"
+      />
+
   </div>
 </template>

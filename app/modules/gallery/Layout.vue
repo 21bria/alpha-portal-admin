@@ -1,18 +1,18 @@
 <script setup lang="ts">
-import SidebarNav from "@/modules/static/SidebarNav.vue"
+import SidebarNav from "@/modules/gallery/SidebarNav.vue"
 </script>
 
 <template>
   <div class="pb-16 space-y-6">
     <div class="space-y-0.5">
-      <h2 class="text-2xl font-bold tracking-tight">
-        CMS: Pages & Sections
-      </h2>
+     <h2 class="text-2xl font-bold tracking-tight">
+      Media: Gallery & Library
+    </h2>
 
-      <p class="text-muted-foreground">
-        Manage website pages, dynamic homepage sections, hero banners, portal content,
-        landing page layouts, and public website content structure.
-      </p>
+    <p class="text-muted-foreground">
+      Manage media categories, albums, image galleries, video libraries,
+      featured content, and public portal media assets.
+    </p>
     </div>
 
     <Separator class="my-6" />
@@ -23,6 +23,8 @@ import SidebarNav from "@/modules/static/SidebarNav.vue"
           <SidebarNav />
           <template #fallback>
             <div class="space-y-2">
+              <div class="h-9 rounded-md bg-muted/60" />
+              <div class="h-9 rounded-md bg-muted/60" />
               <div class="h-9 rounded-md bg-muted/60" />
               <div class="h-9 rounded-md bg-muted/60" />
             </div>

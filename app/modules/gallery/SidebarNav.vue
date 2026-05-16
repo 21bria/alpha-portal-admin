@@ -13,14 +13,21 @@ type UserRole = "SYSTEM" | "GLOBAL_VIEWER" | "ADMIN_USER"
 const items = computed(() => {
   return [
     {
-      title: "Page",
-      to: "/static/page",
+      title: "Categories",
+      to: "/gallery/categories",
     },
     {
-      title: "Sections",
-      to: "/static/sections",
+      title: "Albums",
+      to: "/gallery/albums",
     },
-
+    {
+      title: "Media Library",
+      to: "/gallery/library",
+    },
+    {
+      title: "Upload",
+      to: "/gallery/upload",
+    },
   ]
 })
 

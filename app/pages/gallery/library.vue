@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import SettingsLayout from "@/modules/media/Layout.vue"
-import LibraryForm from "@/modules/media/library/LibraryForm.vue"
+import SettingsLayout from "@/modules/gallery/Layout.vue"
+import LibraryForm from "@/modules/gallery/library/LibraryForm.vue"
 </script>
 
 <template>

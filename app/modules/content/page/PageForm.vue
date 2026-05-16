@@ -11,16 +11,16 @@ import { useApi } from "@/composables/useApi"
 import { useAuthStore } from "@/stores/auth"
 
 import DialogForm, {
-  type NewsCategoryPayload,
-} from "@/modules/media/categories/components/DialogForm.vue"
+  type PagePayload,
+} from "@/modules/content/page/components/DialogForm.vue"
 
 import {
-  getNewsCategoryColumns,
-  type NewsCategoryRow,
-} from "@/modules/media/categories/columns"
+  getPageColumns,
+  type PageRow,
+} from "@/modules/content/page/columns"
 
-import { categoriesConfig } from "@/modules/media/categories/table"
-import { categoriesFilters } from "@/modules/media/categories/filters"
+import { pageConfig } from "@/modules/content/page/table"
+import { pageFilters } from "@/modules/content/page/filters"
 
 const { request } = useApi()
 const notify = useNotify()
@@ -34,7 +34,7 @@ type ApiList<T> = {
 const role = computed(() => (auth.user?.role ?? "ADMIN_USER") as any)
 const canMutate = computed(() => role.value !== "GLOBAL_VIEWER")
 
-const rows = ref<NewsCategoryRow[]>([])
+const rows = ref<PageRow[]>([])
 const total = ref(0)
 const totalPages = ref(1)
 
@@ -44,7 +44,7 @@ const search = ref("")
 const ordering = ref<string | null>(null)
 
 const serverFilters = ref<Record<string, any>>({
-  ...(categoriesConfig.defaultQuery ?? {}),
+  ...(pageConfig.defaultQuery ?? {}),
 })
 
 const query = computed(() => ({
@@ -55,12 +55,13 @@ const query = computed(() => ({
   ...serverFilters.value,
 }))
 
-const { data, pending, error, refresh } = await useAsyncData<ApiList<NewsCategoryRow>>(
-  () => `media-categories:${JSON.stringify(query.value)}`,
-  () => request(categoriesConfig.endpoint, {
-    method: "GET",
-    query: query.value, 
-  }),
+const { data, pending, error, refresh } = await useAsyncData<ApiList<PageRow>>(
+  () => `cms-pages:${JSON.stringify(query.value)}`,
+  () =>
+    request(pageConfig.endpoint, {
+      method: "GET",
+      query: query.value,
+    }),
   { server: false }
 )
 
@@ -101,7 +102,7 @@ function onSort({ key, dir }: { key: string | null; dir: "asc" | "desc" | null }
 // dialog state
 const dialogOpen = ref(false)
 const mode = ref<"create" | "edit">("create")
-const selected = ref<NewsCategoryRow | null>(null)
+const selected = ref<PageRow | null>(null)
 const formLoading = ref(false)
 const formErrors = ref<Record<string, any> | null>(null)
 
@@ -114,7 +115,7 @@ function openCreate() {
   dialogOpen.value = true
 }
 
-function openEdit(row: NewsCategoryRow) {
+function openEdit(row: PageRow) {
   if (!canMutate.value) return
 
   formErrors.value = null
@@ -123,7 +124,7 @@ function openEdit(row: NewsCategoryRow) {
   dialogOpen.value = true
 }
 
-async function submit(payload: NewsCategoryPayload) {
+async function submit(payload: PagePayload) {
   if (!canMutate.value) return
 
   formLoading.value = true
@@ -131,27 +132,30 @@ async function submit(payload: NewsCategoryPayload) {
 
   try {
     if (mode.value === "create") {
-      await request(categoriesConfig.endpoint, {
+      await request(pageConfig.endpoint, {
         method: "POST",
         body: payload,
       })
-      notify.success(`Category "${payload.name}" created`)
+
+      notify.success(`Page "${payload.title}" created`)
     } else {
       await request(
-        `${categoriesConfig.endpoint}${payload.slug || selected.value?.slug}/`,
+        `${pageConfig.endpoint}${payload.slug || selected.value?.slug}/`,
         {
           method: "PATCH",
           body: payload,
         }
       )
-      notify.success(`Category "${payload.name}" updated`)
+
+      notify.success(`Page "${payload.title}" updated`)
     }
 
     dialogOpen.value = false
+
     await refresh()
   } catch (e: any) {
     formErrors.value = e?.data ?? {
-      detail: e?.message || "Failed to save",
+      detail: e?.message || "Failed to save page",
     }
   } finally {
     formLoading.value = false
@@ -160,9 +164,9 @@ async function submit(payload: NewsCategoryPayload) {
 
 // delete
 const deleteOpen = ref(false)
-const selectedDelete = ref<NewsCategoryRow | null>(null)
+const selectedDelete = ref<PageRow | null>(null)
 
-function remove(row: NewsCategoryRow) {
+function remove(row: PageRow) {
   if (!canMutate.value) return
 
   selectedDelete.value = row
@@ -174,12 +178,12 @@ async function confirmDelete() {
 
   try {
     await request(
-      `${categoriesConfig.endpoint}${selectedDelete.value.slug}/`,
+      `${pageConfig.endpoint}${selectedDelete.value.slug}/`,
       {
         method: "DELETE",
       }
     )
-    notify.success(`Category "${selectedDelete.value.name}" deleted`)
+    notify.success(`Page "${selectedDelete.value.title}" deleted`)
     deleteOpen.value = false
     selectedDelete.value = null
     await refresh()
@@ -190,11 +194,11 @@ async function confirmDelete() {
 
 // bulk delete
 const bulkDeleteOpen = ref(false)
-const bulkDeleteRows = ref<NewsCategoryRow[]>([])
+const bulkDeleteRows = ref<PageRow[]>([])
 const bulkDeleting = ref(false)
 
 function askBulkDelete(rows: unknown) {
-  const selectedRows = Array.isArray(rows) ? rows as NewsCategoryRow[] : []
+  const selectedRows = Array.isArray(rows) ? rows as PageRow[] : []
 
   if (!selectedRows.length) {
     notify.info("No rows selected")
@@ -214,7 +218,7 @@ async function confirmBulkDelete() {
     await Promise.all(
       bulkDeleteRows.value.map((row) =>
         request(
-          `${categoriesConfig.endpoint}${row.slug}/`,
+          `${pageConfig.endpoint}${row.slug}/`,
           {
             method: "DELETE",
           }
@@ -234,9 +238,14 @@ async function confirmBulkDelete() {
 }
 
 const columns = computed(() =>
-  getNewsCategoryColumns(
-    { onEdit: openEdit, onDelete: remove },
-    { role: role.value }
+  getPageColumns(
+    {
+      onEdit: openEdit,
+      onDelete: remove,
+    },
+    {
+      role: role.value,
+    }
   )
 )
 
@@ -251,10 +260,13 @@ watchEffect(() => {
   <div class="w-full flex flex-col items-stretch gap-4">
     <div class="flex items-center justify-between">
       <div>
-        <h3 class="text-lg font-semibold">Media Categories</h3>
-        <p class="text-sm text-muted-foreground">
-          Manage media categories for company portal news.
-        </p>
+       <h3 class="text-lg font-semibold">
+        Website Pages
+      </h3>
+      <p class="text-sm text-muted-foreground">
+        Manage static pages, landing pages, SEO metadata,
+        and public website content for the company portal.
+      </p>
       </div>
     </div>
 
@@ -267,7 +279,7 @@ watchEffect(() => {
       :pageSize="pageSize"
       :search="search"
       :loading="pending"
-      :filtersSchema="categoriesFilters"
+      :filtersSchema="pageFilters"
       :showImport="false"
       :showExport="false"
       :showDownloadTemplate="false"
@@ -300,15 +312,15 @@ watchEffect(() => {
 
     <ConfirmDelete
       v-model:open="deleteOpen"
-      title="Delete Category"
-      :description="`Are you sure you want to delete '${selectedDelete?.name ?? selectedDelete?.id}'? This action cannot be undone.`"
+      title="Delete Page"
+      :description="`Are you sure you want to delete '${selectedDelete?.title ?? selectedDelete?.id}'? This action cannot be undone.`"
       @confirm="confirmDelete"
     />
 
     <ConfirmDelete
       v-model:open="bulkDeleteOpen"
-      title="Bulk Delete Categories"
-      :description="`Are you sure you want to delete ${bulkDeleteRows.length} category row(s)? This action cannot be undone.`"
+      title="Bulk Delete Pages"
+      :description="`Are you sure you want to delete ${bulkDeleteRows.length} page row(s)? This action cannot be undone.`"
       @confirm="confirmBulkDelete"
     />
   </div>

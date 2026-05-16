@@ -309,7 +309,7 @@ async function submit() {
       notify.success("Section created successfully")
     }
 
-    router.push("/static/sections")
+    router.push("/content/sections")
   } catch (e: any) {
     errors.value = e?.data ?? {}
     notify.error(e?.data?.detail || e?.message || "Failed to save section")
@@ -358,7 +358,7 @@ async function handleTinyMceImageUpload(blobInfo: any) {
       </div>
 
       <div class="flex items-center gap-2">
-        <Button variant="outline" @click="router.push('/static/sections')">
+        <Button variant="outline" @click="router.push('/content/sections')">
           Cancel
         </Button>
 
