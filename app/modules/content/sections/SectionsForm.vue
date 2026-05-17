@@ -100,12 +100,12 @@ function onSort({ key, dir }: { key: string | null; dir: "asc" | "desc" | null }
 
 function openCreate() {
   if (!canMutate.value) return
-  router.push("/static/post/create")
+  router.push("/content/post/create")
 }
 
 function openEdit(row: PageSectionRow) {
   if (!canMutate.value) return
-  router.push(`/static/post/${row.id}/edit`)
+  router.push(`/content/post/${row.id}/edit`)
 }
 
 // delete
