@@ -188,12 +188,14 @@ async function submit() {
 
 
 
+const api = useApi()
+
 async function handleTinyMceImageUpload(blobInfo: any) {
   const fd = new FormData()
   fd.append("file", blobInfo.blob(), blobInfo.filename())
 
-  const data: any = await request(
-    "api/cms/tinymce/upload-image/",
+  const data: any = await api.request(
+    "cms/tinymce/upload-image/",
     {
       method: "POST",
       body: fd,
@@ -202,7 +204,6 @@ async function handleTinyMceImageUpload(blobInfo: any) {
 
   return data.location
 }
-
 
 </script>
 <template>
