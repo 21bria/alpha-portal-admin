@@ -160,31 +160,50 @@ async function submit() {
   }
 }
 
-async function handleTinyMceImageUpload(blobInfo: any) {
-  const token = useCookie("access").value
+// async function handleTinyMceImageUpload(blobInfo: any) {
+//   const token = useCookie("access").value
 
+//   const fd = new FormData()
+//   fd.append("file", blobInfo.blob(), blobInfo.filename())
+
+//   const apiBase = config.public.apiBaseUrl || "http://kawi.localhost:8000"
+
+//   const res = await fetch(`${apiBase}/api/cms/tinymce/upload-image/`, {
+//     method: "POST",
+//     headers: token
+//       ? {
+//           Authorization: `Bearer ${token}`,
+//         }
+//       : {},
+//     body: fd,
+//   })
+
+//   if (!res.ok) {
+//     throw new Error("Image upload failed")
+//   }
+
+//   const data = await res.json()
+//   return data.location
+// }
+
+
+
+async function handleTinyMceImageUpload(blobInfo: any) {
   const fd = new FormData()
   fd.append("file", blobInfo.blob(), blobInfo.filename())
 
-  const apiBase = config.public.apiBaseUrl || "http://kawi.localhost:8000"
+  const data: any = await request(
+    "api/cms/tinymce/upload-image/",
+    {
+      method: "POST",
+      body: fd,
+    }
+  )
 
-  const res = await fetch(`${apiBase}/api/cms/tinymce/upload-image/`, {
-    method: "POST",
-    headers: token
-      ? {
-          Authorization: `Bearer ${token}`,
-        }
-      : {},
-    body: fd,
-  })
-
-  if (!res.ok) {
-    throw new Error("Image upload failed")
-  }
-
-  const data = await res.json()
   return data.location
 }
+
+
 </script>
 <template>
   <div class="mx-auto flex w-full max-w-8xl flex-col gap-6">
