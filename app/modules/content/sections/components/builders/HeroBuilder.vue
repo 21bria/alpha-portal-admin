@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const api = useApi()
 const config = useRuntimeConfig()
 
 const model = defineModel<Record<string, any>>({
@@ -64,20 +65,25 @@ async function uploadImage(index: number, event: Event) {
   fd.append("file", file)
   fd.append("folder", "career")
 
-  const token = useCookie("access").value
+  // const token = useCookie("access").value
 
-  const res: any = await $fetch(
-    `${config.public.apiBaseUrl}/api/cms/section-images/upload/`,
-    {
-      method: "POST",
-      body: fd,
-      headers: token
-        ? {
-          Authorization: `Bearer ${token}`,
-        }
-        : {},
-    }
-  )
+  // const res: any = await $fetch(
+  //   `${config.public.apiBaseUrl}/api/cms/section-images/upload/`,
+  //   {
+  //     method: "POST",
+  //     body: fd,
+  //     headers: token
+  //       ? {
+  //         Authorization: `Bearer ${token}`,
+  //       }
+  //       : {},
+  //   }
+  // )
+
+  const res: any = await api.request("api/cms/section-images/upload/", {
+    method: "POST",
+    body: fd,
+  })
 
   updateImage(index, "url", res.url)
 }
@@ -175,15 +181,9 @@ async function uploadImage(index: number, event: Event) {
         <!-- <div v-if="image.url" class="overflow-hidden rounded-xl border bg-muted">
           <img :src="image.url" :alt="image.title || 'Hero image'" class="aspect-video w-full object-cover" />
         </div> -->
-        <div
-          v-if="image.url"
-          class="overflow-hidden rounded-2xl border bg-muted"
-        >
-          <img
-            :src="image.url"
-            :alt="image.title || 'Hero image'"
-            class="h-140 w-full object-cover transition duration-500 hover:scale-[1.01]"
-          />
+        <div v-if="image.url" class="overflow-hidden rounded-2xl border bg-muted">
+          <img :src="image.url" :alt="image.title || 'Hero image'"
+            class="h-140 w-full object-cover transition duration-500 hover:scale-[1.01]" />
         </div>
       </div>
 

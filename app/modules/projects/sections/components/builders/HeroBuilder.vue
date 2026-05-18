@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const api = useApi()
 const config = useRuntimeConfig()
 
 const model = defineModel<Record<string, any>>({
@@ -66,18 +67,22 @@ async function uploadImage(index: number, event: Event) {
 
   const token = useCookie("access").value
 
-  const res: any = await $fetch(
-    `${config.public.apiBaseUrl}/api/cms/section-images/upload/`,
-    {
-      method: "POST",
-      body: fd,
-      headers: token
-        ? {
-          Authorization: `Bearer ${token}`,
-        }
-        : {},
-    }
-  )
+  // const res: any = await $fetch(
+  //   `${config.public.apiBaseUrl}/api/cms/section-images/upload/`,
+  //   {
+  //     method: "POST",
+  //     body: fd,
+  //     headers: token
+  //       ? {
+  //         Authorization: `Bearer ${token}`,
+  //       }
+  //       : {},
+  //   }
+  // )
+  const res: any = await api.request("api/cms/section-images/upload/", {
+  method: "POST",
+  body: fd,
+})
 
   updateImage(index, "url", res.url)
 }
